@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { BLOOD_GROUPS } from '../engine/predict.js';
 import { rankDonors } from '../engine/match.js';
 import { getNetworkAssessments } from './predictions.js';
+import { getOfferedHospitalGroups } from './expiring.js';
 
 const router = Router();
 
@@ -17,10 +18,16 @@ router.get('/', (req, res) => {
   }
 
   const assessments = getNetworkAssessments();
+  const offeredKeys = getOfferedHospitalGroups();
   const target = assessments.find((a) => a.hospitalId === hospitalId && a.group === group);
   if (!target) {
     return res.status(404).json({ error: 'Hospital not found' });
   }
+
+  const enrichedCandidates = assessments.map((a) => ({
+    ...a,
+    offeredToNetwork: offeredKeys.has(`${a.hospitalId}:${a.group}`),
+  }));
 
   const coordMap = new Map();
   for (const a of assessments) {
@@ -29,7 +36,7 @@ router.get('/', (req, res) => {
     }
   }
 
-  const ranked = rankDonors(target, assessments).map((d) => {
+  const ranked = rankDonors(target, enrichedCandidates).map((d) => {
     const coords = coordMap.get(d.hospitalId) || {};
     return {
       hospitalId: d.hospitalId,
@@ -41,6 +48,7 @@ router.get('/', (req, res) => {
       surplusUnits: d.surplusUnits,
       transferable: d.transferableUnits,
       expiringSoon: d.expiringSoon,
+      offeredToNetwork: d.offeredToNetwork,
       score: d.score,
       reason: d.reason,
     };

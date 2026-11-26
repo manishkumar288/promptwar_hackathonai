@@ -3,6 +3,7 @@ import DashboardPage from './pages/DashboardPage.jsx';
 import HospitalPage from './pages/HospitalPage.jsx';
 import MatchPage from './pages/MatchPage.jsx';
 import TransfersPage from './pages/TransfersPage.jsx';
+import ExpiryPage from './pages/ExpiryPage.jsx';
 
 export default function App() {
   return (
@@ -18,6 +19,7 @@ export default function App() {
               <Link to="/">Dashboard</Link>
               <Link to="/match">Donor Match</Link>
               <Link to="/transfers">Transfers</Link>
+              <Link to="/expiring">Expiring</Link>
             </nav>
           </div>
         </header>
@@ -28,6 +30,7 @@ export default function App() {
             <Route path="/hospitals/:id" element={<HospitalPage />} />
             <Route path="/match" element={<MatchPage />} />
             <Route path="/transfers" element={<TransfersPage />} />
+            <Route path="/expiring" element={<ExpiryPage />} />
           </Routes>
         </main>
       </div>

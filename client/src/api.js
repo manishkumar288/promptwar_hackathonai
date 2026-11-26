@@ -72,3 +72,15 @@ export function createTransfer(payload) {
 export function updateTransferStatus(id, status) {
   return sendJson(`/api/transfers/${id}`, 'PATCH', { status });
 }
+
+export function fetchExpiring(days = 7) {
+  return request(`/api/expiring?days=${days}`);
+}
+
+export function markBatchUsed(batchId) {
+  return sendJson(`/api/expiring/${batchId}/use`, 'POST', {});
+}
+
+export function offerBatchToNetwork(batchId, offered) {
+  return sendJson(`/api/expiring/${batchId}/offer`, 'POST', { offered });
+}

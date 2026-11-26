@@ -5,6 +5,7 @@ export const MATCH_WEIGHTS = {
   DISTANCE: 0.5,
   TRANSFERABLE: 0.3,
   EXPIRING: 0.2,
+  OFFERED_BOOST: 0.15,
 };
 
 const EARTH_RADIUS_KM = 6371;
@@ -39,17 +40,20 @@ export function rankDonors(target, candidates) {
       needed > 0 ? Math.min(donor.surplusUnits, needed) : donor.surplusUnits;
     const unitRatio = needed > 0 ? Math.min(1, transferableUnits / needed) : 1;
     const hasExpiring = donor.expiringSoon > 0 ? 1 : 0;
+    const offeredBoost = donor.offeredToNetwork ? MATCH_WEIGHTS.OFFERED_BOOST : 0;
 
     const score =
       MATCH_WEIGHTS.DISTANCE * (1 - distanceKm / MAX_DONOR_DISTANCE_KM) +
       MATCH_WEIGHTS.TRANSFERABLE * unitRatio +
-      MATCH_WEIGHTS.EXPIRING * hasExpiring;
+      MATCH_WEIGHTS.EXPIRING * hasExpiring +
+      offeredBoost;
 
     const expiryPart =
       donor.expiringSoon > 0
         ? `, ${donor.expiringSoon} expire within 3 days`
         : '';
-    const reason = `${distanceKm.toFixed(1)} km away, can send ${transferableUnits} units${expiryPart}.`;
+    const offerPart = donor.offeredToNetwork ? ', offered to network' : '';
+    const reason = `${distanceKm.toFixed(1)} km away, can send ${transferableUnits} units${expiryPart}${offerPart}.`;
 
     donors.push({
       hospitalId: donor.hospitalId,
@@ -59,6 +63,7 @@ export function rankDonors(target, candidates) {
       surplusUnits: donor.surplusUnits,
       transferableUnits,
       expiringSoon: donor.expiringSoon,
+      offeredToNetwork: Boolean(donor.offeredToNetwork),
       score: +score.toFixed(3),
       reason,
     });

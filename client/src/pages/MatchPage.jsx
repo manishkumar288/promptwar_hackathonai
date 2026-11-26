@@ -237,6 +237,11 @@ export default function MatchPage() {
                             <Link to={`/hospitals/${d.hospitalId}?group=${encodeURIComponent(group)}`}>
                               {d.name}
                             </Link>
+                            {d.offeredToNetwork && (
+                              <span className="risk-badge offer-badge" style={{ marginLeft: 6 }}>
+                                OFFERED BOOST
+                              </span>
+                            )}
                           </td>
                           <td>{d.distanceKm} km</td>
                           <td>{d.score}</td>
