@@ -16,6 +16,7 @@ export default function HospitalPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [surgeBusy, setSurgeBusy] = useState(false);
+  const [surgeMultiplier, setSurgeMultiplier] = useState(3);
   const [surgeMessage, setSurgeMessage] = useState(null);
   const [showAllBatches, setShowAllBatches] = useState(false);
 
@@ -46,11 +47,11 @@ export default function HospitalPage() {
       const res = await simulateSurge({
         hospitalId: Number(id),
         group: selectedGroup,
-        multiplier: 80,
+        multiplier: Math.min(5, Number(surgeMultiplier)),
       });
       setSurgeMessage({
         ok: true,
-        text: `Simulated emergency surge on ${selectedGroup}: +${res.extraUnits} units added to today's demand.`,
+        text: `Simulated ${res.multiplier}x emergency surge on ${selectedGroup}: +${res.extraUnits} units added to today's demand.`,
       });
       await loadHospital();
     } catch (err) {
@@ -125,6 +126,19 @@ export default function HospitalPage() {
           >
             Find Donor Match
           </Link>
+          <label className="inline-filter">
+            Surge:
+            <select
+              value={surgeMultiplier}
+              onChange={(e) => setSurgeMultiplier(Number(e.target.value))}
+              disabled={surgeBusy}
+            >
+              <option value={1.5}>1.5x</option>
+              <option value={2}>2x</option>
+              <option value={3}>3x</option>
+              <option value={5}>5x</option>
+            </select>
+          </label>
           <button
             type="button"
             className="btn"

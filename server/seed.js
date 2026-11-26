@@ -54,11 +54,11 @@ function addDays(baseDate, offsetDays) {
 }
 
 function buildBatches(hospitalId, group, rng) {
-  // Demo condition 1: Hospital 1 low on O- (~2 days of cover at ~5 units/day)
+  // Demo condition 1: Hospital 1 low on O- (8 units -> WATCH at ~2.0 units/day, CRITICAL on 3x surge)
   if (hospitalId === 1 && group === 'O-') {
     return [
-      { units: 4, daysLeft: 3 },
-      { units: 5, daysLeft: 10 },
+      { units: 4, daysLeft: 5 },
+      { units: 4, daysLeft: 12 },
     ];
   }
 
@@ -67,8 +67,8 @@ function buildBatches(hospitalId, group, rng) {
     return [
       { units: 6, daysLeft: 2 },
       { units: 8, daysLeft: 3 },
-      { units: 18, daysLeft: 18 },
-      { units: 20, daysLeft: 28 },
+      { units: 12, daysLeft: 18 },
+      { units: 10, daysLeft: 28 },
     ];
   }
 
@@ -111,10 +111,9 @@ function buildBatches(hospitalId, group, rng) {
 }
 
 function buildUsageValue(hospitalId, group, dayOffsetFromToday, rng) {
-  // Hospital 1 O- has elevated demand (~5 units/day) -> 9 units = ~1.8 days of cover
+  // Hospital 1 O- baseline ~2.0 units/day -> 8 units = 4 days cover (stockout day 5 = WATCH)
   if (hospitalId === 1 && group === 'O-') {
-    if (dayOffsetFromToday >= -2) return 5;
-    return randInt(rng, 4, 6);
+    return 2;
   }
 
   // Hospital 4 O- has steady moderate usage (~2.5 units/day) -> strong surplus

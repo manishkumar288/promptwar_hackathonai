@@ -7,10 +7,13 @@ import { getUsage14 } from './predictions.js';
 
 const router = Router();
 
+const MAX_SURGE_MULTIPLIER = 5;
+const TODAY_DEMAND_WEIGHT = 0.6 / 3 + 0.4 / 14;
+
 router.post('/surge', (req, res) => {
   const hospitalId = Number(req.body?.hospitalId);
   const group = req.body?.group || req.body?.bloodGroup;
-  const multiplier = Number(req.body?.multiplier ?? 80);
+  const rawMultiplier = Number(req.body?.multiplier ?? 3);
 
   if (!Number.isInteger(hospitalId) || hospitalId <= 0) {
     return res.status(400).json({ error: 'Valid hospitalId is required' });
@@ -18,9 +21,11 @@ router.post('/surge', (req, res) => {
   if (!BLOOD_GROUPS.includes(group)) {
     return res.status(400).json({ error: 'Valid blood group is required' });
   }
-  if (!Number.isFinite(multiplier) || multiplier <= 0) {
+  if (!Number.isFinite(rawMultiplier) || rawMultiplier <= 0) {
     return res.status(400).json({ error: 'multiplier must be a positive number' });
   }
+
+  const multiplier = Math.min(MAX_SURGE_MULTIPLIER, rawMultiplier);
 
   const hospital = db.prepare('SELECT id FROM hospitals WHERE id = ?').get(hospitalId);
   if (!hospital) {
@@ -32,7 +37,10 @@ router.post('/surge', (req, res) => {
   const baseline = usage14.length
     ? usage14.reduce((sum, u) => sum + u, 0) / usage14.length
     : 2;
-  const extraUnits = Math.max(1, Math.round(baseline * multiplier));
+  const extraUnits =
+    multiplier > 1
+      ? Math.max(1, Math.round((baseline * (multiplier - 1)) / TODAY_DEMAND_WEIGHT))
+      : Math.max(1, Math.round(baseline * multiplier));
 
   db.prepare(
     `INSERT INTO daily_usage (hospital_id, blood_group, usage_date, units_used)
