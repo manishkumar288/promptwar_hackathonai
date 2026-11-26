@@ -4,6 +4,9 @@ import hospitalsRouter from './routes/hospitals.js';
 import predictionsRouter from './routes/predictions.js';
 import alertsRouter from './routes/alerts.js';
 import analyticsRouter from './routes/analytics.js';
+import batchesRouter from './routes/batches.js';
+import usageRouter from './routes/usage.js';
+import demoRouter from './routes/demo.js';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -19,6 +22,9 @@ app.use('/api/hospitals', hospitalsRouter);
 app.use('/api/predictions', predictionsRouter);
 app.use('/api/alerts', alertsRouter);
 app.use('/api/analytics', analyticsRouter);
+app.use('/api/batches', batchesRouter);
+app.use('/api/usage', usageRouter);
+app.use('/api/demo', demoRouter);
 
 app.listen(PORT, () => {
   console.log(`BloodBridge server listening on http://localhost:${PORT}`);

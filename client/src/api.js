@@ -13,6 +13,14 @@ async function request(url, options) {
   return res.json();
 }
 
+function postJson(url, body) {
+  return request(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
 export function fetchHospitals() {
   return request('/api/hospitals');
 }
@@ -31,4 +39,16 @@ export function fetchAlerts() {
 
 export function fetchAnalyticsSummary() {
   return request('/api/analytics/summary');
+}
+
+export function addBatch(payload) {
+  return postJson('/api/batches', payload);
+}
+
+export function logUsage(payload) {
+  return postJson('/api/usage', payload);
+}
+
+export function simulateSurge(payload) {
+  return postJson('/api/demo/surge', payload);
 }
