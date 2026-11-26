@@ -90,14 +90,22 @@ export default function HospitalPage() {
           </p>
         </div>
 
-        <button
-          type="button"
-          className="btn"
-          onClick={handleSimulateSurge}
-          disabled={surgeBusy}
-        >
-          {surgeBusy ? 'Simulating...' : `Simulate Surge (${activeAssessment.group})`}
-        </button>
+        <div className="action-row">
+          <Link
+            to={`/match?hospitalId=${id}&group=${encodeURIComponent(activeAssessment.group)}`}
+            className="btn btn-secondary"
+          >
+            Find Donor Match
+          </Link>
+          <button
+            type="button"
+            className="btn"
+            onClick={handleSimulateSurge}
+            disabled={surgeBusy}
+          >
+            {surgeBusy ? 'Simulating...' : `Simulate Surge (${activeAssessment.group})`}
+          </button>
+        </div>
       </div>
 
       {surgeMessage && <div className="status-ok">{surgeMessage}</div>}

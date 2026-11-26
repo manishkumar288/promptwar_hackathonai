@@ -456,3 +456,36 @@ a:hover {
   font-family: inherit;
   font-size: 0.92rem;
 }
+
+/* M7 Matching & Transfers */
+.action-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-sm {
+  padding: 5px 10px;
+  font-size: 0.82rem;
+}
+
+.units-input {
+  width: 68px;
+  padding: 6px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-family: inherit;
+}
+
+.status-approved {
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #93c5fd;
+}
+
+.alert-match-link {
+  margin-left: auto;
+  font-size: 0.78rem;
+  font-weight: 600;
+}

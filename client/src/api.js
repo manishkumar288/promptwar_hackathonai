@@ -13,9 +13,9 @@ async function request(url, options) {
   return res.json();
 }
 
-function postJson(url, body) {
+function sendJson(url, method, body) {
   return request(url, {
-    method: 'POST',
+    method,
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
@@ -42,13 +42,33 @@ export function fetchAnalyticsSummary() {
 }
 
 export function addBatch(payload) {
-  return postJson('/api/batches', payload);
+  return sendJson('/api/batches', 'POST', payload);
 }
 
 export function logUsage(payload) {
-  return postJson('/api/usage', payload);
+  return sendJson('/api/usage', 'POST', payload);
 }
 
 export function simulateSurge(payload) {
-  return postJson('/api/demo/surge', payload);
+  return sendJson('/api/demo/surge', 'POST', payload);
+}
+
+export function fetchMatch(hospitalId, group) {
+  const params = new URLSearchParams({
+    hospitalId: String(hospitalId),
+    group,
+  });
+  return request(`/api/match?${params.toString()}`);
+}
+
+export function fetchTransfers() {
+  return request('/api/transfers');
+}
+
+export function createTransfer(payload) {
+  return sendJson('/api/transfers', 'POST', payload);
+}
+
+export function updateTransferStatus(id, status) {
+  return sendJson(`/api/transfers/${id}`, 'PATCH', { status });
 }

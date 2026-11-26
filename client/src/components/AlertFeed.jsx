@@ -17,9 +17,25 @@ export default function AlertFeed({ alerts }) {
               <div className="alert-badges">
                 <RiskBadge level={alert.severity} />
                 <span className="type-pill">{alert.type}</span>
+                {alert.type === 'RISK' && (
+                  <Link
+                    to={`/match?hospitalId=${alert.hospitalId}&group=${encodeURIComponent(alert.bloodGroup)}`}
+                    className="alert-match-link"
+                  >
+                    Find Match →
+                  </Link>
+                )}
+                {alert.type === 'TRANSFER' && (
+                  <Link to="/transfers" className="alert-match-link">
+                    Review →
+                  </Link>
+                )}
               </div>
               <div className="alert-body">
-                <Link to={`/hospitals/${alert.hospitalId}`} className="alert-message">
+                <Link
+                  to={`/hospitals/${alert.hospitalId}?group=${encodeURIComponent(alert.bloodGroup)}`}
+                  className="alert-message"
+                >
                   {alert.message}
                 </Link>
               </div>
