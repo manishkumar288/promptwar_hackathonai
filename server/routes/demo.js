@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import db from '../db.js';
 import { BLOOD_GROUPS, todayDateString } from '../engine/predict.js';
+import { seedDatabase } from '../seed.js';
+import { clearOfferedBatches } from './expiring.js';
 import { getUsage14 } from './predictions.js';
 
 const router = Router();
@@ -40,6 +42,12 @@ router.post('/surge', (req, res) => {
   ).run(hospitalId, group, today, extraUnits);
 
   res.json({ ok: true, hospitalId, group, multiplier, extraUnits, usageDate: today });
+});
+
+router.post('/reset', (req, res) => {
+  clearOfferedBatches();
+  const counts = seedDatabase();
+  res.json({ ok: true, counts });
 });
 
 export default router;

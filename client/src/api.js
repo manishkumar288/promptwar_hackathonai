@@ -53,6 +53,10 @@ export function simulateSurge(payload) {
   return sendJson('/api/demo/surge', 'POST', payload);
 }
 
+export function resetDemoData() {
+  return sendJson('/api/demo/reset', 'POST', {});
+}
+
 export function fetchMatch(hospitalId, group) {
   const params = new URLSearchParams({
     hospitalId: String(hospitalId),

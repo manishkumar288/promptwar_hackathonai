@@ -48,12 +48,13 @@ export default function HospitalPage() {
         group: selectedGroup,
         multiplier: 80,
       });
-      setSurgeMessage(
-        `Simulated emergency surge on ${selectedGroup}: +${res.extraUnits} units added to today's demand.`
-      );
+      setSurgeMessage({
+        ok: true,
+        text: `Simulated emergency surge on ${selectedGroup}: +${res.extraUnits} units added to today's demand.`,
+      });
       await loadHospital();
     } catch (err) {
-      setSurgeMessage(`Surge error: ${err.message}`);
+      setSurgeMessage({ ok: false, text: `Surge error: ${err.message}` });
     } finally {
       setSurgeBusy(false);
     }
@@ -87,6 +88,15 @@ export default function HospitalPage() {
     return (
       <div className="card status-error">
         <p>Error: {error}</p>
+        <Link to="/">← Back to Dashboard</Link>
+      </div>
+    );
+  }
+
+  if (!data || !activeAssessment) {
+    return (
+      <div className="card">
+        <p className="muted">No hospital data available.</p>
         <Link to="/">← Back to Dashboard</Link>
       </div>
     );
@@ -126,7 +136,11 @@ export default function HospitalPage() {
         </div>
       </div>
 
-      {surgeMessage && <div className="status-ok">{surgeMessage}</div>}
+      {surgeMessage && (
+        <div className={surgeMessage.ok ? 'status-ok' : 'status-error'}>
+          {surgeMessage.text}
+        </div>
+      )}
 
       <section className="card">
         <h2>Select Blood Group</h2>

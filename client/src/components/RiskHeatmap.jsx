@@ -41,8 +41,11 @@ export default function RiskHeatmap({ predictions }) {
         </div>
       </div>
 
-      <div className="table-scroll">
-        <table className="heatmap-table">
+      {hospitals.length === 0 ? (
+        <p className="muted">No hospital predictions available.</p>
+      ) : (
+        <div className="table-scroll">
+          <table className="heatmap-table">
           <thead>
             <tr>
               <th>Hospital</th>
@@ -86,6 +89,7 @@ export default function RiskHeatmap({ predictions }) {
           </tbody>
         </table>
       </div>
+      )}
     </section>
   );
 }
