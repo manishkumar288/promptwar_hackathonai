@@ -489,3 +489,33 @@ a:hover {
   font-size: 0.78rem;
   font-weight: 600;
 }
+
+/* M7.5 Leaflet Map */
+.hospital-map-wrap {
+  margin-top: 10px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
+.map-popup {
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.match-layout {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 18px;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .match-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.hover-row:hover {
+  background-color: #f8fafc;
+}

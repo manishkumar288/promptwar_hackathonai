@@ -22,8 +22,45 @@ router.get('/', (req, res) => {
     return res.status(404).json({ error: 'Hospital not found' });
   }
 
-  const donors = rankDonors(target, assessments);
-  res.json({ target, donors });
+  const coordMap = new Map();
+  for (const a of assessments) {
+    if (!coordMap.has(a.hospitalId)) {
+      coordMap.set(a.hospitalId, { lat: a.lat, lng: a.lng, name: a.hospitalName });
+    }
+  }
+
+  const ranked = rankDonors(target, assessments).map((d) => {
+    const coords = coordMap.get(d.hospitalId) || {};
+    return {
+      hospitalId: d.hospitalId,
+      name: d.hospitalName,
+      lat: coords.lat,
+      lng: coords.lng,
+      group: d.group,
+      distanceKm: d.distanceKm,
+      surplusUnits: d.surplusUnits,
+      transferable: d.transferableUnits,
+      expiringSoon: d.expiringSoon,
+      score: d.score,
+      reason: d.reason,
+    };
+  });
+
+  res.json({
+    shortage: {
+      hospitalId: target.hospitalId,
+      name: target.hospitalName,
+      lat: target.lat,
+      lng: target.lng,
+      group: target.group,
+      usableUnits: target.usableUnits,
+      demandPerDay: target.demandPerDay,
+      neededUnits: target.neededUnits,
+      stockoutDay: target.stockoutDay,
+      riskLevel: target.riskLevel,
+    },
+    donors: ranked,
+  });
 });
 
 export default router;

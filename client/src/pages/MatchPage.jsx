@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { createTransfer, fetchHospitals, fetchMatch } from '../api.js';
 import RiskBadge from '../components/RiskBadge.jsx';
+import HospitalMap from '../components/HospitalMap.jsx';
 
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
@@ -15,6 +16,7 @@ export default function MatchPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [unitsByDonor, setUnitsByDonor] = useState({});
+  const [hoveredDonorId, setHoveredDonorId] = useState(null);
   const [requestBusyId, setRequestBusyId] = useState(null);
   const [feedback, setFeedback] = useState(null);
 
@@ -31,7 +33,7 @@ export default function MatchPage() {
 
       const defaults = {};
       for (const d of mData.donors) {
-        defaults[d.hospitalId] = d.transferableUnits;
+        defaults[d.hospitalId] = d.transferable;
       }
       setUnitsByDonor(defaults);
     } catch (err) {
@@ -54,7 +56,7 @@ export default function MatchPage() {
   }
 
   async function handleRequestTransfer(donor) {
-    const units = Number(unitsByDonor[donor.hospitalId] ?? donor.transferableUnits);
+    const units = Number(unitsByDonor[donor.hospitalId] ?? donor.transferable);
     try {
       setRequestBusyId(donor.hospitalId);
       setFeedback(null);
@@ -66,7 +68,7 @@ export default function MatchPage() {
       });
       setFeedback({
         ok: true,
-        text: `Transfer #${created.id} requested: ${units} units of ${group} from ${donor.hospitalName}.`,
+        text: `Transfer #${created.id} requested: ${units} units of ${group} from ${donor.name}.`,
       });
     } catch (err) {
       setFeedback({ ok: false, text: err.message });
@@ -74,6 +76,54 @@ export default function MatchPage() {
       setRequestBusyId(null);
     }
   }
+
+  const mapHospitals = useMemo(() => {
+    if (!matchData) return [];
+    const donorById = new Map(matchData.donors.map((d) => [d.hospitalId, d]));
+    const { shortage } = matchData;
+
+    return hospitals.map((h) => {
+      if (h.id === shortage.hospitalId) {
+        return {
+          id: h.id,
+          name: h.name,
+          lat: h.lat,
+          lng: h.lng,
+          riskLevel: shortage.riskLevel,
+          label: `Shortage: needs ${shortage.neededUnits} units`,
+        };
+      }
+      const donor = donorById.get(h.id);
+      if (donor) {
+        return {
+          id: h.id,
+          name: h.name,
+          lat: h.lat,
+          lng: h.lng,
+          riskLevel: 'SAFE',
+          label: `${donor.distanceKm} km, can send ${donor.transferable} units`,
+        };
+      }
+      return {
+        id: h.id,
+        name: h.name,
+        lat: h.lat,
+        lng: h.lng,
+        riskLevel: 'PLAIN',
+        label: `No ${group} surplus`,
+      };
+    });
+  }, [hospitals, matchData, group]);
+
+  const mapLines = useMemo(() => {
+    if (!matchData) return [];
+    const { shortage, donors } = matchData;
+    return donors.slice(0, 3).map((d, idx) => ({
+      from: [d.lat, d.lng],
+      to: [shortage.lat, shortage.lng],
+      best: idx === 0,
+    }));
+  }, [matchData]);
 
   return (
     <div className="stack">
@@ -143,84 +193,100 @@ export default function MatchPage() {
             <div className="section-header">
               <div>
                 <h2>
-                  Target: {matchData.target.hospitalName} ({matchData.target.group})
+                  Target: {matchData.shortage.name} ({matchData.shortage.group})
                 </h2>
                 <p className="muted">
-                  Current stock: {matchData.target.usableUnits} u · Demand: {matchData.target.demandPerDay} u/day · Needed (5d target): {matchData.target.neededUnits} u
+                  Current stock: {matchData.shortage.usableUnits} u · Demand: {matchData.shortage.demandPerDay} u/day · Needed (5d target): {matchData.shortage.neededUnits} u
                 </p>
               </div>
-              <RiskBadge level={matchData.target.riskLevel} />
+              <RiskBadge level={matchData.shortage.riskLevel} />
             </div>
           </section>
 
-          <section className="card">
-            <h2>Ranked Donors ({matchData.donors.length})</h2>
-            {matchData.donors.length === 0 ? (
-              <p className="muted">
-                No donor hospitals within 50 km currently have surplus {group} units.
-              </p>
-            ) : (
-              <div className="table-scroll">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Rank</th>
-                      <th>Donor Hospital</th>
-                      <th>Distance</th>
-                      <th>Surplus</th>
-                      <th>Expiring ≤3d</th>
-                      <th>Score</th>
-                      <th>Reason</th>
-                      <th>Units</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {matchData.donors.map((d, idx) => (
-                      <tr key={d.hospitalId}>
-                        <td><strong>#{idx + 1}</strong></td>
-                        <td>
-                          <Link to={`/hospitals/${d.hospitalId}?group=${encodeURIComponent(group)}`}>
-                            {d.hospitalName}
-                          </Link>
-                        </td>
-                        <td>{d.distanceKm} km</td>
-                        <td>{d.surplusUnits} u</td>
-                        <td>{d.expiringSoon} u</td>
-                        <td>{d.score}</td>
-                        <td>{d.reason}</td>
-                        <td>
-                          <input
-                            type="number"
-                            className="units-input"
-                            min="1"
-                            max={d.surplusUnits}
-                            value={unitsByDonor[d.hospitalId] ?? d.transferableUnits}
-                            onChange={(e) =>
-                              setUnitsByDonor((prev) => ({
-                                ...prev,
-                                [d.hospitalId]: e.target.value,
-                              }))
-                            }
-                          />
-                        </td>
-                        <td>
-                          <button
-                            type="button"
-                            className="btn"
-                            disabled={requestBusyId === d.hospitalId}
-                            onClick={() => handleRequestTransfer(d)}
-                          >
-                            {requestBusyId === d.hospitalId ? 'Requesting...' : 'Request transfer'}
-                          </button>
-                        </td>
+          <div className="match-layout">
+            <section className="card">
+              <h2>Ranked Donors ({matchData.donors.length})</h2>
+              {matchData.donors.length === 0 ? (
+                <p className="muted">
+                  No donor hospitals within 50 km currently have surplus {group} units.
+                </p>
+              ) : (
+                <div className="table-scroll">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Rank</th>
+                        <th>Donor Hospital</th>
+                        <th>Distance</th>
+                        <th>Score</th>
+                        <th>Reason</th>
+                        <th>Units</th>
+                        <th>Action</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </section>
+                    </thead>
+                    <tbody>
+                      {matchData.donors.map((d, idx) => (
+                        <tr
+                          key={d.hospitalId}
+                          className="hover-row"
+                          onMouseEnter={() => setHoveredDonorId(d.hospitalId)}
+                          onMouseLeave={() => setHoveredDonorId(null)}
+                        >
+                          <td><strong>#{idx + 1}</strong></td>
+                          <td>
+                            <Link to={`/hospitals/${d.hospitalId}?group=${encodeURIComponent(group)}`}>
+                              {d.name}
+                            </Link>
+                          </td>
+                          <td>{d.distanceKm} km</td>
+                          <td>{d.score}</td>
+                          <td>{d.reason}</td>
+                          <td>
+                            <input
+                              type="number"
+                              className="units-input"
+                              min="1"
+                              max={d.surplusUnits}
+                              value={unitsByDonor[d.hospitalId] ?? d.transferable}
+                              onChange={(e) =>
+                                setUnitsByDonor((prev) => ({
+                                  ...prev,
+                                  [d.hospitalId]: e.target.value,
+                                }))
+                              }
+                            />
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              className="btn btn-sm"
+                              disabled={requestBusyId === d.hospitalId}
+                              onClick={() => handleRequestTransfer(d)}
+                            >
+                              {requestBusyId === d.hospitalId ? 'Requesting...' : 'Request transfer'}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+
+            <section className="card">
+              <h2>Donor Route Map</h2>
+              <p className="muted">
+                Top 3 donor routes (thickest red line = #1 match). Click any marker for details.
+              </p>
+              <HospitalMap
+                hospitals={mapHospitals}
+                highlightId={hospitalId}
+                hoverId={hoveredDonorId}
+                lines={mapLines}
+              />
+            </section>
+          </div>
         </>
       )}
     </div>

@@ -1,15 +1,18 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { fetchHospital, simulateSurge } from '../api.js';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { fetchHospital, fetchHospitals, simulateSurge } from '../api.js';
 import RiskBadge from '../components/RiskBadge.jsx';
 import BatchTable from '../components/BatchTable.jsx';
 import ForecastChart from '../components/ForecastChart.jsx';
 import InventoryForms from '../components/InventoryForms.jsx';
+import HospitalMap from '../components/HospitalMap.jsx';
 
 export default function HospitalPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [data, setData] = useState(null);
+  const [allHospitals, setAllHospitals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [surgeBusy, setSurgeBusy] = useState(false);
@@ -22,8 +25,9 @@ export default function HospitalPage() {
     try {
       if (isInitial) setLoading(true);
       setError(null);
-      const res = await fetchHospital(id);
+      const [res, list] = await Promise.all([fetchHospital(id), fetchHospitals()]);
       setData(res);
+      setAllHospitals(list);
     } catch (err) {
       setError(err.message || 'Failed to load hospital');
     } finally {
@@ -55,6 +59,22 @@ export default function HospitalPage() {
     }
   }
 
+  const activeAssessment =
+    data?.assessments.find((a) => a.group === selectedGroup) || data?.assessments[0];
+
+  const mapHospitals = useMemo(() => {
+    if (!data || !activeAssessment) return [];
+    const currentId = Number(id);
+    return allHospitals.map((h) => ({
+      id: h.id,
+      name: h.name,
+      lat: h.lat,
+      lng: h.lng,
+      riskLevel: h.id === currentId ? activeAssessment.riskLevel : 'PLAIN',
+      label: h.id === currentId ? `${activeAssessment.group}: ${activeAssessment.usableUnits}u` : 'Network hospital',
+    }));
+  }, [allHospitals, data, activeAssessment, id]);
+
   if (loading) {
     return (
       <div className="card">
@@ -72,8 +92,6 @@ export default function HospitalPage() {
     );
   }
 
-  const activeAssessment =
-    data.assessments.find((a) => a.group === selectedGroup) || data.assessments[0];
   const groupBatches = data.batches.filter((b) => b.blood_group === activeAssessment.group);
   const groupHistory = data.usageByGroup?.[activeAssessment.group] || [];
 
@@ -158,12 +176,24 @@ export default function HospitalPage() {
         </div>
       </section>
 
-      <ForecastChart
-        group={activeAssessment.group}
-        usageHistory={groupHistory}
-        batches={groupBatches}
-        demandPerDay={activeAssessment.demandPerDay}
-      />
+      <div className="charts-grid">
+        <ForecastChart
+          group={activeAssessment.group}
+          usageHistory={groupHistory}
+          batches={groupBatches}
+          demandPerDay={activeAssessment.demandPerDay}
+        />
+
+        <section className="card">
+          <h2>Hospital Location</h2>
+          <p className="muted">Highlighted marker shows {data.hospital.name}; click another marker to switch.</p>
+          <HospitalMap
+            hospitals={mapHospitals}
+            highlightId={Number(id)}
+            onSelect={(hid) => navigate(`/hospitals/${hid}?group=${encodeURIComponent(activeAssessment.group)}`)}
+          />
+        </section>
+      </div>
 
       <InventoryForms
         hospitalId={Number(id)}

@@ -10,7 +10,9 @@ const VALID_STATUSES = ['approved', 'completed', 'rejected'];
 function fetchTransferById(id) {
   return db
     .prepare(
-      `SELECT t.*, fh.name AS from_hospital_name, th.name AS to_hospital_name
+      `SELECT t.*,
+              fh.name AS from_hospital_name, fh.lat AS from_lat, fh.lng AS from_lng,
+              th.name AS to_hospital_name, th.lat AS to_lat, th.lng AS to_lng
        FROM transfer_requests t
        JOIN hospitals fh ON fh.id = t.from_hospital_id
        JOIN hospitals th ON th.id = t.to_hospital_id
@@ -22,7 +24,9 @@ function fetchTransferById(id) {
 router.get('/', (req, res) => {
   const rows = db
     .prepare(
-      `SELECT t.*, fh.name AS from_hospital_name, th.name AS to_hospital_name
+      `SELECT t.*,
+              fh.name AS from_hospital_name, fh.lat AS from_lat, fh.lng AS from_lng,
+              th.name AS to_hospital_name, th.lat AS to_lat, th.lng AS to_lng
        FROM transfer_requests t
        JOIN hospitals fh ON fh.id = t.from_hospital_id
        JOIN hospitals th ON th.id = t.to_hospital_id
